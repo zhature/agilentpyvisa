@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 # some very basic analysis functions
-def get_R(d, current_column='EI', voltage_column='EV'):
+def get_R(d, current_column='CI', voltage_column='CV'):
     """
     Takes in padnas.DataFrame and optional column labels, returns average Resistance
     """

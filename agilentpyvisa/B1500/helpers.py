@@ -30,7 +30,10 @@ def availableInputRanges(model):
         return tuple([InputRanges_V[x] for  x in InputRanges_V.__members__ if InputRanges_V[x].value in (0,5,50,200,400,1000)]+
                      [InputRanges_I[x] for  x in InputRanges_I.__members__ if InputRanges_I[x].value in tuple([0]+list(range(8,20)))])
     if model =="B1520A":  # MFCMU  CMU Multi frequency capacitance measurement unit
-        exception_logger.warn("This device is not yet supported: {}".format(model))
+        # exception_logger.warn("This device is not yet supported: {}".format(model))
+        return ()
+    if model =="B1530A":  # MFCMU  CMU Multi frequency capacitance measurement unit
+        # exception_logger.warn("This device is not yet supported: {}".format(model))
         return ()
     elif model =="B1525A":  # HVSPGU SPGU High voltage semiconductor pulse generator unit
         return tuple([InputRanges_V[x] for  x in InputRanges_V.__members__ if InputRanges_V[x].value in ()]+
@@ -106,10 +109,10 @@ def parse_ascii(test_format, output , num_measure, timestamp, outputmode, num_fo
     num_fields = num_measure if not timestamp else num_measure*2
     if outputmode in (OutputMode.with_primarysource, OutputMode.with_synchronoussource):
         num_fields += num_force
-    dtypes = np.float
+    dtypes = float
     if hasHeader(test_format):
         fields = getFields(num_fields, lines)
-        dtypes = {"names": fields, "formats": [np.float]*len(fields)}
+        dtypes = {"names": fields, "formats": [float]*len(fields)}
         lines = list(filter(lambda x: any([f in x for f in fields]), lines))
         sel_lists = (( 0 if x != i else 1 for x in range(num_fields)) for i in range(num_fields))
         field_iters = (compress(lines, cycle(sel_list)) for sel_list in sel_lists)
@@ -117,7 +120,7 @@ def parse_ascii(test_format, output , num_measure, timestamp, outputmode, num_fo
         filtered_arr = np.array(list(zip(*filtered)), dtype=dtypes)
     else:
         lines= (tuple([x.lower() for x in line.split(",")] for line in lines))
-        filtered_arr = np.fromiter(lines,dtype=np.float)
+        filtered_arr = np.fromiter(lines,dtype=float)
     return pd.DataFrame(filtered_arr)
 
 def parse_ascii_default_dict(test_format, output):
@@ -126,7 +129,7 @@ def parse_ascii_default_dict(test_format, output):
     lines=(chain.from_iterable(lines))
     data_dict = defaultdict(list)
     for l in lines:
-        data_dict[l[1:3]].append(np.float(l[3:].lower()))
+        data_dict[l[1:3]].append(float(l[3:].lower()))
     series_dict = dict([(k, pd.Series(v)) for k,v in data_dict.items()])
     return (pd.DataFrame(series_dict),series_dict)
 

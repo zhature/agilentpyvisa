@@ -1,5 +1,5 @@
 from collections import namedtuple
-from collections import Sequence
+from collections.abc import Sequence
 from .enums import *
 
 
@@ -83,7 +83,7 @@ class SPGU(namedtuple("__SPGU",[
                 pulse_delay=[0],
                 pulse_leading=[2e-8],
                 pulse_trailing=[2e-8],
-                wavemode=SPGUModes.Pulse,  # Pulses or Arbitrary Linear Wavve
+                wavemode=SPGUModes.Pulse,  # Pulses or Arbitrary Linear Wave
                 output_mode=SPGUOutputModes.count, ## Free run, number of pulses or duration
                 condition=1,  ## Number of seconds to run or pulses to send
                 loadZ=[1e6],  # estimated impedance load of the DUT. Used internally by the SPGU to modify the supplied voltage (voltage divider with 50 Ohm)
@@ -93,60 +93,74 @@ class SPGU(namedtuple("__SPGU",[
                 switch_width=None,  # time to keep switch state, independent of pulse width
                 ):
         """ Returns a validated SPGU setup, with the following default settings unless specified otherwise:
-            - uses pulse switch,normall open, without delay,switch_width 1e-7 s or
+            - uses pulse switch, normally open, without delay, switch_width 1e-7 s or
             pulse_width + pulse_delay, whichever is longer
             - setting the loadZ automatically with a CORRSERR measurement
             - output mode = count the pulses, number of pulses=1
             - 2 level pulse, no pulse delay, minimum (8 ns) pulse lead/trail,
-            pulse period set to just barely contain delay+pulse width
+            pulse period set to just barely contain delay + pulse width
             - use SPGU pulse signal source 1
 
             When using 3 level pulse you need to explicitly specify the voltage and timing setup for signal 1 and 2 as tuple or list.
-            If you omit pulse_leading,pulse_trailing or pulse_delay the default (minmum) values are simply duplicated and your "3-level" pulse will become 2 level pulse with the compounded peak
+            If you omit pulse_leading, pulse_trailing or pulse_delay the default (minimum) values are simply duplicated and your "3-level" pulse will become 2 level pulse with the compounded peak
             """
-        if levels==SPGULevels.BothSignals_3_levels:
-            if not len(pulse_delay)==2 :
+        if levels == SPGULevels.BothSignals_3_levels:
+            if not len(pulse_delay) == 2:
                 pulse_delay = pulse_delay * 2
-            if not len(pulse_leading)==2:
+            if not len(pulse_leading) == 2:
                 pulse_leading = pulse_leading * 2
-            if not len(pulse_trailing)==2:
+            if not len(pulse_trailing) == 2:
                 pulse_trailing = pulse_trailing * 2
-            sources=(SPGUSignals.Signal1,SPGUSignals.Signal2)
-            if any([not (isinstance(x,Sequence) and len(x)==2) for x in (pulse_base,pulse_peak,pulse_width,sources,pulse_delay,pulse_leading,pulse_trailing)]):
-                raise ValueError("When specifying 3 level pulses, need to give pulse_base,pulse_peak,pulse_width,pulse_delay,pulse_lead,pulse_trail and sources as len 2 list or tuple")
-
+            sources = (SPGUSignals.Signal1, SPGUSignals.Signal2)
+            if any([not (isinstance(x, Sequence) and len(x) == 2) for x in (pulse_base, pulse_peak, pulse_width, sources, pulse_delay, pulse_leading, pulse_trailing)]):
+                raise ValueError("When specifying 3 level pulses, need to give pulse_base, pulse_peak, pulse_width, pulse_delay, pulse_lead, pulse_trail and sources as len 2 list or tuple")
         else:
-            pulse_peak=[pulse_peak,]
-            pulse_base=[pulse_base,]
-            pulse_width=[pulse_width,]
-            sources=[sources,]
-            if not isinstance(pulse_delay,Sequence):
-                pulse_delay=[pulse_delay,]
-            if not isinstance(pulse_leading,Sequence):
-                pulse_leading=[pulse_leading,]
-            if not isinstance(pulse_trailing,Sequence):
-                pulse_trailing=[pulse_trailing,]
+            pulse_peak = [pulse_peak, ]
+            pulse_base = [pulse_base, ]
+            pulse_width = [pulse_width, ]
+            sources = [sources, ]
+            if not isinstance(pulse_delay, Sequence):
+                pulse_delay = [pulse_delay, ]
+            if not isinstance(pulse_leading, Sequence):
+                pulse_leading = [pulse_leading, ]
+            if not isinstance(pulse_trailing, Sequence):
+                pulse_trailing = [pulse_trailing, ]
+        
         if pulse_period is None:
-            pulse_period = max(pulse_width)+max(pulse_delay)+1e-8+max(pulse_trailing)/0.8
+            pulse_period = max(pulse_width) + max(pulse_delay) + 1e-8 + max(pulse_trailing) / 0.8
 
-        if not max(pulse_width)+max(pulse_delay)+max(pulse_trailing)/0.8:
-            raise ValueError("pulse width+pulse delay + pulse trail/0.8 must be in puls period for all levels")
+        pulse_parameters = {
+            "pulse_period": pulse_period,
+            "pulse_width": pulse_width,
+            "pulse_delay": pulse_delay,
+            "pulse_leading": pulse_leading,
+            "pulse_trailing": pulse_trailing,
+            "switch_delay": switch_delay,
+            "switch_width": switch_width
+        }
+
+        def raise_value_error(message, params):
+            raise ValueError(f"{message}. Parameters: {params}")
+
+        if not max(pulse_width) + max(pulse_delay) + max(pulse_trailing) / 0.8:
+            raise_value_error("pulse width + pulse delay + pulse trail/0.8 must be in pulse period for all levels", pulse_parameters)
         if pulse_period < 2e-8 or pulse_period > 10:
-            raise ValueError("Pulse period should be between 2e-8 s and 10 s, is {}s".format(pulse_period))
-        if any([x < -40 or x > 40 for x in pulse_base+ pulse_peak]):
-            raise ValueError("Voltage must stay between -40 V and 40 V, base is {} and peak is {}".format( pulse_base, pulse_peak))
+            raise_value_error(f"Pulse period should be between 2e-8 s and 10 s, is {pulse_period}s", pulse_parameters)
+        if any([x < -40 or x > 40 for x in pulse_base + pulse_peak]):
+            raise_value_error(f"Voltage must stay between -40 V and 40 V, base is {pulse_base} and peak is {pulse_peak}", pulse_parameters)
         if not switch_width:
-            switch_width= max(1e-7,sum(pulse_width+pulse_delay))
-        elif switch_width<1e-7 or switch_width>pulse_period-switch_delay:
-            raise ValueError("switch width must be between 1e-7 and pulse_period-delay s")
-        if switch_delay<0 or switch_delay>pulse_period-1e-7:
-            raise ValueError("switch delay must be between 0 and pulse_period-1e-7 s")
-        if min(pulse_width)<1e-8 or max(pulse_width)>pulse_period-1e-8:
-            raise ValueError("pulse width must be between 1e-7 and pulse_period-1e-8({}-1e-8={}) s, is {}".format(pulse_period,  pulse_period-1e-8, pulse_width))
-        if min(pulse_delay)<0 or max(pulse_delay)>pulse_period-2e-8:
-            raise ValueError("pulse delay must be between 0 and pulse_period-2e-8 s")
-        if any([x >0.4 or x <8e-9 for x in pulse_leading+ pulse_trailing]):
-            raise ValueError("Pulse lead/trail must be in the rango 8e-9 to 0.4")
+            switch_width = max(1e-7, sum(pulse_width + pulse_delay))
+        elif switch_width < 1e-7 or switch_width > pulse_period - switch_delay:
+            raise_value_error("switch width must be between 1e-7 and pulse_period - delay s", pulse_parameters)
+        # if switch_delay < 0 or switch_delay > pulse_period - 1e-7:
+        #     raise_value_error("switch delay must be between 0 and pulse_period - 1e-7 s", pulse_parameters)
+        if min(pulse_width) < 1e-8 or max(pulse_width) > pulse_period - 1e-8:
+            raise_value_error(f"pulse width must be between 1e-7 and pulse_period - 1e-8 ({pulse_period}) s, is {pulse_width}", pulse_parameters)
+        if min(pulse_delay) < 0 or max(pulse_delay) > pulse_period - 2e-8:
+            raise_value_error("pulse delay must be between 0 and pulse_period - 2e-8 s", pulse_parameters)
+        if any([x > 0.4 or x < 8e-9 for x in pulse_leading + pulse_trailing]):
+            raise_value_error("Pulse lead/trail must be in the range 8e-9 to 0.4", pulse_parameters)
+# Parameters: {'pulse_period': 4e-08, 'pulse_width': [2e-08], 'pulse_delay': [0], 'pulse_leading': [8e-09], 'pulse_trailing': [8e-09], 'switch_delay': 0, 'switch_width': None}
         return super(SPGU, cls).__new__(cls,
                                         wavemode,
                                         output_mode,

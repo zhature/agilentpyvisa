@@ -1,5 +1,5 @@
 from .loggers import exception_logger,write_logger, query_logger
-import visa
+import pyvisa as visa
 from .enums import *
 from .force import *
 from .helpers import format_command
@@ -97,7 +97,7 @@ class SMU(object):
         try:
             ret = self.parent.check_settings(self.slot)
             channels.extend([int(x.replace("CL", ""))
-                             for x in ret.strip().split(";") if x])
+                         for x in ret.strip().split(";") if x])
         except visa.VisaIOError as e:
             self._check_err()
             exception_logger.warn(

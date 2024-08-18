@@ -49,7 +49,7 @@ class ParameterSettings(IntEnum):
     of the B1500 Manual"""
     OutputSwitchOnOff = 0
     StatusSlot1 = 1
-    StatusSlot2 = 2
+    StatusSlot2 = 3
     StatusSlot3 = 3
     StatusSlot4 = 4
     StatusSlot5 = 5

@@ -187,9 +187,22 @@ class HVSPGU(SMU,SPGUSMU):
 class MFCFMU(SMU):
 
     def __init__(self, parent_device, slot):
-        exception_logger.warn( NotImplementedError("This type of SMU has not been implemented yet"))
+        # exception_logger.warn( NotImplementedError("This type of SMU has not been implemented yet"))
         self.long_name = "Multiple frequency capacitive frequency measuring unit"
         self.models = ["B1520A"]
+        # TODO special treatment
+        super().__init__(parent_device, slot)
+        self._search_max_voltage=100
+        self._search_max_current=0.1
+        self._search_min_voltage = 0
+        self._search_min_current = 0
+
+class WGFMU(SMU):
+
+    def __init__(self, parent_device, slot):
+        # exception_logger.warn( NotImplementedError("This type of SMU has not been implemented yet"))
+        self.long_name = "Waveform generator/fast measurement unit module"
+        self.models = ["B1530A"]
         # TODO special treatment
         super().__init__(parent_device, slot)
         self._search_max_voltage=100

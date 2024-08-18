@@ -1,6 +1,6 @@
 # vim: set fileencoding: utf-8 -*-
 # -*- coding: utf-8 -*-
-import visa
+import pyvisa as visa
 from itertools import cycle, starmap, compress
 import pandas as pd
 import numpy as np
@@ -230,7 +230,10 @@ class B1500():
     def check_settings(self, parameter):
         """ Queries the tester for the specified parameter
         (see enums.py or tabcomplete for available parameters)"""
-        ret = self.query("*LRN? {}".format(parameter))
+        if parameter != 2:
+            ret = self.query("*LRN? {}".format(parameter))
+        else:
+            ret = "CL2"    
         return ret
 
 
@@ -571,7 +574,7 @@ to annotate error codes will come in a future release")
         if  self.__last_channel_setups.get(unit)==channel and not force_new_setup:
             # restore voltage settings to channel
             unit.restore(channel.number)
-            exception_logger.warn("Channel configuration for channel {} has not changed, using old setup".format(channel.number))
+            # exception_logger.warn("Channel configuration for channel {} has not changed, using old setup".format(channel.number))
         else:
             self.__last_channel_setups[unit]=channel
             if not channel.spgu:
@@ -854,6 +857,8 @@ to annotate error codes will come in a future release")
             return HRSMU(self, slot)
         if model =="B1520A":  # MFCMU  CMU Multi frequency capacitance measurement unit
             return MFCFMU(self, slot)
+        if model =="B1530A":  # Waveform generator/fast measurement unit
+            return WGFMU(self, slot)
         elif model =="B1525A":  # HVSPGU SPGU High voltage semiconductor pulse generator unit
             return HVSPGU(self, slot)
         else:

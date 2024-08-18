@@ -149,7 +149,7 @@ def plot_output(out, t='line',up='b',down='r', voltage_column='EV', current_colu
         fig, ax1=plt.subplots()
         ax2=ax1.twinx()
     lout = out[[voltage_column, current_column]]
-    lout=lout[lout.applymap(lambda x: not np.isnan(x)).all(axis=1)] # remove NaN values
+    lout=lout[lout.map(lambda x: not np.isnan(x)).all(axis=1)] # remove NaN values
     y=lout[current_column].abs()*1e6 # scale up current from microns
     x=np.array(lout[voltage_column]) 
     half = lout[voltage_column].abs().idxmax() # find peak of sweep for up/down plot
